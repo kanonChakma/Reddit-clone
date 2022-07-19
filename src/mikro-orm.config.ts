@@ -7,12 +7,13 @@ export default {
     migrations: {
       path: path.join(__dirname ,'./migrations'), 
       glob: '!(*.d).{js,ts}',
-      pattern: /^[\w-]+\d+\.[tj]s$/ 
+      pattern: /^[\w-]+\d+\.[tj]s$/, 
+      disableForeignKeys: false
     },
     entities:[Post],
-    dbName: 'data',
-    user:'data',
-    password:'data1998',
+    dbName: 'social',
+    user:'bubon',
+    password:'bubon1998',
     type:'postgresql',
     debug:!__prod__
  } as Parameters<typeof MikroORM.init>[0];
