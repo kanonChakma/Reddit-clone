@@ -22,6 +22,11 @@ let PostsResolver = class PostsResolver {
     post(id, { em }) {
         return em.findOne(Post_1.Post, { id });
     }
+    async createPost(title, { em }) {
+        const post = em.create(Post_1.Post, { title });
+        await em.persistAndFlush(post);
+        return post;
+    }
 };
 __decorate([
     (0, type_graphql_1.Query)(() => [Post_1.Post]),
@@ -38,6 +43,14 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], PostsResolver.prototype, "post", null);
+__decorate([
+    (0, type_graphql_1.Mutation)(() => Post_1.Post),
+    __param(0, (0, type_graphql_1.Arg)('title', () => String)),
+    __param(1, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], PostsResolver.prototype, "createPost", null);
 PostsResolver = __decorate([
     (0, type_graphql_1.Resolver)()
 ], PostsResolver);
