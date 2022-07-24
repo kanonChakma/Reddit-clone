@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const constant_1 = require("./constant");
 const Post_1 = require("./entities/Post");
+const User_1 = require("./entities/User");
 exports.default = {
     migrations: {
         path: path_1.default.join(__dirname, './migrations'),
@@ -13,7 +14,7 @@ exports.default = {
         pattern: /^[\w-]+\d+\.[tj]s$/,
         disableForeignKeys: false
     },
-    entities: [Post_1.Post],
+    entities: [Post_1.Post, User_1.User],
     dbName: 'social',
     user: 'bubon',
     password: 'bubon1998',
