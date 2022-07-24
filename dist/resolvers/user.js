@@ -32,25 +32,102 @@ __decorate([
 UsernamePasswordInput = __decorate([
     (0, type_graphql_1.InputType)()
 ], UsernamePasswordInput);
+let FieldError = class FieldError {
+};
+__decorate([
+    (0, type_graphql_1.Field)(),
+    __metadata("design:type", String)
+], FieldError.prototype, "field", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(),
+    __metadata("design:type", String)
+], FieldError.prototype, "message", void 0);
+FieldError = __decorate([
+    (0, type_graphql_1.ObjectType)()
+], FieldError);
+let UserResponse = class UserResponse {
+};
+__decorate([
+    (0, type_graphql_1.Field)(() => [FieldError], { nullable: true }),
+    __metadata("design:type", Array)
+], UserResponse.prototype, "error", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(() => User_1.User, { nullable: true }),
+    __metadata("design:type", User_1.User)
+], UserResponse.prototype, "user", void 0);
+UserResponse = __decorate([
+    (0, type_graphql_1.ObjectType)()
+], UserResponse);
 let UserResolver = class UserResolver {
     async register(optios, { em }) {
+        if (optios.username.length <= 2) {
+            return {
+                error: [
+                    {
+                        field: "username",
+                        message: "length should be greater than length 2 "
+                    }
+                ]
+            };
+        }
+        if (optios.password.length <= 3) {
+            return {
+                error: [
+                    {
+                        field: "password",
+                        message: "password length should be greater than length 3 "
+                    }
+                ]
+            };
+        }
         const hasPassword = await argon2_1.default.hash(optios.password);
         const user = em.create(User_1.User, {
             username: optios.username,
             password: hasPassword
         });
         await em.persistAndFlush(user);
-        return user;
+        return { user };
+    }
+    async login(optios, { em }) {
+        const user = await em.findOne(User_1.User, { username: optios.username });
+        if (!user) {
+            return {
+                error: [{
+                        field: 'username',
+                        message: "user not found"
+                    }]
+            };
+        }
+        const valid = await argon2_1.default.verify(user.password, optios.password);
+        if (!valid) {
+            return {
+                error: [{
+                        field: 'username',
+                        message: "password does not match"
+                    }]
+            };
+        }
+        return {
+            user
+        };
     }
 };
 __decorate([
-    (0, type_graphql_1.Mutation)(() => User_1.User),
+    (0, type_graphql_1.Mutation)(() => UserResponse),
     __param(0, (0, type_graphql_1.Arg)('options')),
     __param(1, (0, type_graphql_1.Ctx)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [UsernamePasswordInput, Object]),
     __metadata("design:returntype", Promise)
 ], UserResolver.prototype, "register", null);
+__decorate([
+    (0, type_graphql_1.Mutation)(() => UserResponse),
+    __param(0, (0, type_graphql_1.Arg)('options')),
+    __param(1, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [UsernamePasswordInput, Object]),
+    __metadata("design:returntype", Promise)
+], UserResolver.prototype, "login", null);
 UserResolver = __decorate([
     (0, type_graphql_1.Resolver)()
 ], UserResolver);
