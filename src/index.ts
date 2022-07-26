@@ -1,4 +1,5 @@
  import { MikroORM } from "@mikro-orm/core"
+import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core"
 import { ApolloServer } from "apollo-server-express"
 import connectRedis from "connect-redis"
 import express from "express"
@@ -49,7 +50,8 @@ const main =async() => {
         resolvers: [HelloResolver, PostsResolver, UserResolver],
         validate: false
       }),
-      context: ({req, res}):MyContext => ({em: orm.em, req, res})
+      context: ({req, res}):MyContext => ({em: orm.em, req, res}),
+      plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],
   }); 
   await apolloServer.start();
   apolloServer.applyMiddleware({app});
