@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { MyContext } from "src/types";
+import { MyContext } from "src/types/types";
 import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Resolver } from "type-graphql";
 import { User } from "../entities/User";
 
@@ -61,14 +61,25 @@ export class UserResolver {
         username:optios.username,
         password: hasPassword
     })
-    await em.persistAndFlush(user);
+    try {
+       await em.persistAndFlush(user);
+    } catch (error) {
+      return{
+        error:[
+          {
+            field:error.code,
+            message:error.detail
+          }
+        ]
+      }
+    }
     return {user}; 
   }
 
   @Mutation(() => UserResponse)
   async login(
     @Arg('options') optios:UsernamePasswordInput,
-    @Ctx() {em}:MyContext
+    @Ctx() {em, req}:MyContext
   ): Promise<UserResponse> {
     const user = await em.findOne(User,{username: optios.username})
     if(!user) {
@@ -81,13 +92,14 @@ export class UserResolver {
     }
     const valid = await argon2.verify(user.password, optios.password);
     if(!valid){
-      return{
+      return {
         error: [{
           field: 'username',
           message: "password does not match"    
         }]
       }
     }
+    req.session.userId = user.id;
     return {
       user
     };

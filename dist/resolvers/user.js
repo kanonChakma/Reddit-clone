@@ -85,10 +85,22 @@ let UserResolver = class UserResolver {
             username: optios.username,
             password: hasPassword
         });
-        await em.persistAndFlush(user);
+        try {
+            await em.persistAndFlush(user);
+        }
+        catch (error) {
+            return {
+                error: [
+                    {
+                        field: error.code,
+                        message: error.detail
+                    }
+                ]
+            };
+        }
         return { user };
     }
-    async login(optios, { em }) {
+    async login(optios, { em, req }) {
         const user = await em.findOne(User_1.User, { username: optios.username });
         if (!user) {
             return {
@@ -107,6 +119,7 @@ let UserResolver = class UserResolver {
                     }]
             };
         }
+        req.session.userId = user.id;
         return {
             user
         };
