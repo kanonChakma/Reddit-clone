@@ -44,7 +44,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg('options') optios:UsernamePasswordInput,
-    @Ctx() {em}:MyContext
+    @Ctx() {em, req}:MyContext
   ): Promise<UserResponse> {
     if(optios.username.length<=2){
       return{
@@ -73,16 +73,23 @@ export class UserResolver {
     })
     try {
        await em.persistAndFlush(user);
-    } catch (error) {
-      return{
-        error:[
-          {
-            field:error.code,
-            message:error.detail
-          }
-        ]
+    } catch (err) {
+      console.log(err);
+      if (err.code === "23505") {
+        return {
+          error: [
+            {
+              field: "username",
+              message: "username already taken",
+            },
+          ],
+        };
       }
     }
+    // store user id session
+    // this will set a cookie on the user
+    // keep them logged in
+    req.session.userId = user.id;
     return {user}; 
   }
 
@@ -115,3 +122,15 @@ export class UserResolver {
     };
   }
 }
+
+// const result =  await( em as EntityManager)
+// .createQueryBuilder(User)
+// .getKnexQuery()
+// .insert({
+//    username:options.username,
+//    password: hasPassword,
+//    created_at: new Date(),
+//    updated_at: new Date()
+// })
+// .returning("*")
+// user = result[0];

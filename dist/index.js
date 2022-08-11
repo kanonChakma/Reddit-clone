@@ -7,6 +7,7 @@ const core_1 = require("@mikro-orm/core");
 const apollo_server_core_1 = require("apollo-server-core");
 const apollo_server_express_1 = require("apollo-server-express");
 const connect_redis_1 = __importDefault(require("connect-redis"));
+const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const express_session_1 = __importDefault(require("express-session"));
 const redis_1 = require("redis");
@@ -21,6 +22,10 @@ const main = async () => {
     const orm = await core_1.MikroORM.init(mikro_orm_config_1.default);
     await orm.getMigrator().up();
     const app = (0, express_1.default)();
+    app.use((0, cors_1.default)({
+        origin: 'http://localhost:3000',
+        credentials: true
+    }));
     const RedisStore = (0, connect_redis_1.default)(express_session_1.default);
     const redisClient = (0, redis_1.createClient)({ legacyMode: true });
     redisClient.connect().catch(console.error);
@@ -46,7 +51,7 @@ const main = async () => {
         plugins: [(0, apollo_server_core_1.ApolloServerPluginLandingPageGraphQLPlayground)({})],
     });
     await apolloServer.start();
-    apolloServer.applyMiddleware({ app });
+    apolloServer.applyMiddleware({ app, cors: false });
     app.listen(4000, () => {
         console.log("app is listening");
     });

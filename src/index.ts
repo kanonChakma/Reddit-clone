@@ -2,6 +2,7 @@
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core"
 import { ApolloServer } from "apollo-server-express"
 import connectRedis from "connect-redis"
+import cors from 'cors'
 import express from "express"
 import session from "express-session"
 import { createClient } from "redis"
@@ -14,7 +15,6 @@ import { PostsResolver } from "./resolvers/posts"
 import { UserResolver } from "./resolvers/user"
 import { MyContext } from "./types/types"
 
-
 const main =async() => {
  //connect database
  const orm = await MikroORM.init(mikroOrmConfig)
@@ -23,7 +23,10 @@ const main =async() => {
  
  //server setup
  const app = express();
- 
+ app.use(cors({
+   origin:'http://localhost:3000',
+   credentials: true
+ }))
  const RedisStore = connectRedis(session)
  const redisClient = createClient({ legacyMode: true })
  redisClient.connect().catch(console.error)
@@ -54,7 +57,7 @@ const main =async() => {
       plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],
   }); 
   await apolloServer.start();
-  apolloServer.applyMiddleware({app});
+  apolloServer.applyMiddleware({app, cors:false});
   
   app.listen(4000, ()=>{
     console.log("app is listening")
