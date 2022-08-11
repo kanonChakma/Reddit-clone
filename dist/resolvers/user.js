@@ -66,7 +66,7 @@ let UserResolver = class UserResolver {
         const user = await em.findOne(User_1.User, { id: req.session.userId });
         return user;
     }
-    async register(optios, { em }) {
+    async register(optios, { em, req }) {
         if (optios.username.length <= 2) {
             return {
                 error: [
@@ -95,16 +95,20 @@ let UserResolver = class UserResolver {
         try {
             await em.persistAndFlush(user);
         }
-        catch (error) {
-            return {
-                error: [
-                    {
-                        field: error.code,
-                        message: error.detail
-                    }
-                ]
-            };
+        catch (err) {
+            console.log(err);
+            if (err.code === "23505") {
+                return {
+                    error: [
+                        {
+                            field: "username",
+                            message: "username already taken",
+                        },
+                    ],
+                };
+            }
         }
+        req.session.userId = user.id;
         return { user };
     }
     async login(optios, { em, req }) {
