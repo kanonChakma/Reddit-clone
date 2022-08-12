@@ -1,6 +1,7 @@
 import argon2 from "argon2";
 import { MyContext } from "src/types/types";
 import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver } from "type-graphql";
+import { COOKIE_NAME } from "../constant";
 import { User } from "../entities/User";
 
 @InputType()
@@ -73,14 +74,36 @@ export class UserResolver {
     })
     try {
        await em.persistAndFlush(user);
+
+       //Another solution insert user data with createQueryBuilder
+        // const result =  await( em as EntityManager)
+        // .createQueryBuilder(User)
+        // .getKnexQuery()
+        // .insert({
+        //    username:options.username,
+        //    password: hasPassword,
+        //    created_at: new Date(),
+        //    updated_at: new Date()
+        // })
+        // .returning("*")
+        // user = result[0];
     } catch (err) {
       console.log(err);
-      if (err.code === "23505") {
+      if (err.code === '23505' && err.constraint === 'user_username_unique') {
         return {
           error: [
             {
-              field: "username",
-              message: "username already taken",
+              field: 'username',
+              message: 'username already in use',
+            },
+          ],
+        };
+      } else if (err.code === '23505' && err.constraint === 'user_email') {
+        return {
+          error: [
+            {
+              field: 'email',
+              message: 'email already in use',
             },
           ],
         };
@@ -111,7 +134,7 @@ export class UserResolver {
     if(!valid){
       return {
         error: [{
-          field: 'username',
+          field: 'password',
           message: "password does not match"    
         }]
       }
@@ -121,16 +144,18 @@ export class UserResolver {
       user
     };
   }
-}
 
-// const result =  await( em as EntityManager)
-// .createQueryBuilder(User)
-// .getKnexQuery()
-// .insert({
-//    username:options.username,
-//    password: hasPassword,
-//    created_at: new Date(),
-//    updated_at: new Date()
-// })
-// .returning("*")
-// user = result[0];
+  @Mutation(() => Boolean)
+  async logout(
+    @Ctx() {req, res}:MyContext
+  ){
+    return new Promise((resolve) => req.session.destroy((err) => {
+      res.clearCookie(COOKIE_NAME)
+      if(err){
+        resolve(false);
+        return;
+      }
+      resolve(true); 
+    }))
+  }
+}

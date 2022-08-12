@@ -8,7 +8,7 @@ import session from "express-session"
 import { createClient } from "redis"
 import 'reflect-metadata'
 import { buildSchema } from "type-graphql"
-import { __prod__ } from "./constant"
+import { COOKIE_NAME, __prod__ } from "./constant"
 import mikroOrmConfig from "./mikro-orm.config"
 import { HelloResolver } from "./resolvers/hello"
 import { PostsResolver } from "./resolvers/posts"
@@ -33,7 +33,7 @@ const main =async() => {
  
   app.use(
     session({
-      name:'aib',
+      name:COOKIE_NAME,
       store: new RedisStore({ client: redisClient as any, disableTouch: true }),
       cookie:{
        maxAge:1000*60*60*24*365*10,

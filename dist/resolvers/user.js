@@ -18,6 +18,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserResolver = void 0;
 const argon2_1 = __importDefault(require("argon2"));
 const type_graphql_1 = require("type-graphql");
+const constant_1 = require("../constant");
 const User_1 = require("../entities/User");
 let UsernamePasswordInput = class UsernamePasswordInput {
 };
@@ -97,12 +98,22 @@ let UserResolver = class UserResolver {
         }
         catch (err) {
             console.log(err);
-            if (err.code === "23505") {
+            if (err.code === '23505' && err.constraint === 'user_username_unique') {
                 return {
                     error: [
                         {
-                            field: "username",
-                            message: "username already taken",
+                            field: 'username',
+                            message: 'username already in use',
+                        },
+                    ],
+                };
+            }
+            else if (err.code === '23505' && err.constraint === 'user_email') {
+                return {
+                    error: [
+                        {
+                            field: 'email',
+                            message: 'email already in use',
                         },
                     ],
                 };
@@ -125,7 +136,7 @@ let UserResolver = class UserResolver {
         if (!valid) {
             return {
                 error: [{
-                        field: 'username',
+                        field: 'password',
                         message: "password does not match"
                     }]
             };
@@ -134,6 +145,16 @@ let UserResolver = class UserResolver {
         return {
             user
         };
+    }
+    async logout({ req, res }) {
+        return new Promise((resolve) => req.session.destroy((err) => {
+            res.clearCookie(constant_1.COOKIE_NAME);
+            if (err) {
+                resolve(false);
+                return;
+            }
+            resolve(true);
+        }));
     }
 };
 __decorate([
@@ -159,6 +180,13 @@ __decorate([
     __metadata("design:paramtypes", [UsernamePasswordInput, Object]),
     __metadata("design:returntype", Promise)
 ], UserResolver.prototype, "login", null);
+__decorate([
+    (0, type_graphql_1.Mutation)(() => Boolean),
+    __param(0, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserResolver.prototype, "logout", null);
 UserResolver = __decorate([
     (0, type_graphql_1.Resolver)()
 ], UserResolver);
