@@ -18,7 +18,9 @@ const mikro_orm_config_1 = __importDefault(require("./mikro-orm.config"));
 const hello_1 = require("./resolvers/hello");
 const posts_1 = require("./resolvers/posts");
 const user_1 = require("./resolvers/user");
+const sendMail_1 = require("./utils/sendMail");
 const main = async () => {
+    (0, sendMail_1.sendEmail)("kanon@gmail.com", "trainYourMind");
     const orm = await core_1.MikroORM.init(mikro_orm_config_1.default);
     await orm.getMigrator().up();
     const app = (0, express_1.default)();
