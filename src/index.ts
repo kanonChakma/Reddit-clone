@@ -14,10 +14,13 @@ import { HelloResolver } from "./resolvers/hello"
 import { PostsResolver } from "./resolvers/posts"
 import { UserResolver } from "./resolvers/user"
 import { MyContext } from "./types/types"
+import { sendEmail } from "./utils/sendMail"
 
 const main =async() => {
+  sendEmail("kanon@gmail.com", "trainYourMind");
  //connect database
  const orm = await MikroORM.init(mikroOrmConfig)
+ 
  //run migration 
  await orm.getMigrator().up();
  
