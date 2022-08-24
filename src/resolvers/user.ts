@@ -1,17 +1,10 @@
 import argon2 from "argon2";
 import { MyContext } from "src/types/types";
-import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver } from "type-graphql";
+import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from "type-graphql";
 import { COOKIE_NAME } from "../constant";
 import { User } from "../entities/User";
-
-@InputType()
-class UsernamePasswordInput {
-  @Field()
-  username: string;
-
-  @Field()
-  password: string;
-  }
+import { validateRegister } from "../utils/validateRegister";
+import { UsernamePasswordInput } from "./UsernamePasswordInput";
 
 @ObjectType()
 class FieldError {
@@ -41,36 +34,32 @@ export class UserResolver {
     const user = await em.findOne(User, {id: req.session.userId})
     return user;
   } 
+  
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg('email') email:string,
+    @Ctx() {em}: MyContext
+    ){
+    await em.findOne(User, {email})
+    return true;
+  }
 
   @Mutation(() => UserResponse)
   async register(
     @Arg('options') optios:UsernamePasswordInput,
     @Ctx() {em, req}:MyContext
   ): Promise<UserResponse> {
-    if(optios.username.length<=2){
-      return{
-        error: [
-          {
-            field:"username",
-            message:"length should be greater than length 2 "
-          }
-        ]
-      }
-    }
-    if(optios.password.length<=3){
-      return{
-        error: [
-          {
-            field:"password",
-            message:"password length should be greater than length 3 "
-          }
-        ]
-      }
-    }
+     
+    const error = validateRegister(optios); 
+     if(error){
+       return {error}
+     }
+
     const hasPassword = await argon2.hash(optios.password);
     const user = em.create(User,{
         username:optios.username,
-        password: hasPassword
+        password: hasPassword,
+        email: optios.email
     })
     try {
        await em.persistAndFlush(user);
@@ -118,10 +107,13 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg('options') optios:UsernamePasswordInput,
+    @Arg('usernameOrEmail') usernameOrEmail: string,
+    @Arg('password') password: string,
     @Ctx() {em, req}:MyContext
+
   ): Promise<UserResponse> {
-    const user = await em.findOne(User,{username: optios.username})
+    const user = await em.findOne(User,
+    usernameOrEmail.includes('@')?{email: usernameOrEmail}: {username: usernameOrEmail})
     if(!user) {
       return{
         error:[{
@@ -130,7 +122,7 @@ export class UserResolver {
         }]
       }
     }
-    const valid = await argon2.verify(user.password, optios.password);
+    const valid = await argon2.verify(user.password, password);
     if(!valid){
       return {
         error: [{
