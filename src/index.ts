@@ -20,7 +20,7 @@ const main =async() => {
   sendEmail("kanon@gmail.com", "trainYourMind");
  //connect database
  const orm = await MikroORM.init(mikroOrmConfig)
- 
+
  //run migration 
  await orm.getMigrator().up();
  

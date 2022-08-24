@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const core_1 = require("@mikro-orm/core");
+const consumers_1 = require("stream/consumers");
 const type_graphql_1 = require("type-graphql");
 let User = class User {
     constructor() {
@@ -38,6 +39,11 @@ __decorate([
     (0, core_1.Property)({ type: "text", unique: true }),
     __metadata("design:type", String)
 ], User.prototype, "username", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(),
+    (0, core_1.Property)({ type: consumers_1.text, unique: true }),
+    __metadata("design:type", String)
+], User.prototype, "email", void 0);
 __decorate([
     (0, core_1.Property)({ type: "text" }),
     __metadata("design:type", String)
