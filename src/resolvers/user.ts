@@ -1,11 +1,12 @@
 import argon2 from "argon2";
 import { MyContext } from "src/types/types";
 import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from "type-graphql";
-import { COOKIE_NAME } from "../constant";
+import { v4 } from "uuid";
+import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from "../constant";
 import { User } from "../entities/User";
+import { sendEmail } from "../utils/sendMail";
 import { validateRegister } from "../utils/validateRegister";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
-
 @ObjectType()
 class FieldError {
   @Field()
@@ -15,7 +16,7 @@ class FieldError {
   message: string
 }
 @ObjectType()
-class UserResponse{
+class UserResponse {
   @Field(() => [FieldError], {nullable: true})
   error?: FieldError[]
 
@@ -36,11 +37,28 @@ export class UserResolver {
   } 
   
   @Mutation(() => Boolean)
-  async forgotPassword(
+  async forgotPassword (
     @Arg('email') email:string,
-    @Ctx() {em}: MyContext
-    ){
-    await em.findOne(User, {email})
+    @Ctx() {em, redis}: MyContext
+    ) {
+    
+    const user = await em.findOne(User, {email})
+    if(!user) {
+       return true;
+    }
+    
+    //creating a token
+    const token = v4();
+
+    //storing in redis
+    await redis.set(
+      FORGOT_PASSWORD_PREFIX+token, 
+      user.id, 
+      "EX", 1000*60*60*24*3
+      ); // for three days
+    
+    sendEmail(email, 
+    `<a href="http://localhost:3000/change-password/${token}">Reset Password<a/>`)
     return true;
   }
 
@@ -117,7 +135,7 @@ export class UserResolver {
     if(!user) {
       return{
         error:[{
-          field: 'username',
+          field: 'usernameOrEmail',
           message: "user not found"     
         }]
       }

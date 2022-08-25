@@ -1,11 +1,11 @@
- import { MikroORM } from "@mikro-orm/core"
+import { MikroORM } from "@mikro-orm/core"
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core"
 import { ApolloServer } from "apollo-server-express"
 import connectRedis from "connect-redis"
 import cors from 'cors'
 import express from "express"
 import session from "express-session"
-import { createClient } from "redis"
+import Redis from "ioredis"
 import 'reflect-metadata'
 import { buildSchema } from "type-graphql"
 import { COOKIE_NAME, __prod__ } from "./constant"
@@ -14,10 +14,8 @@ import { HelloResolver } from "./resolvers/hello"
 import { PostsResolver } from "./resolvers/posts"
 import { UserResolver } from "./resolvers/user"
 import { MyContext } from "./types/types"
-import { sendEmail } from "./utils/sendMail"
 
 const main =async() => {
-  sendEmail("kanon@gmail.com", "trainYourMind");
  //connect database
  const orm = await MikroORM.init(mikroOrmConfig)
 
@@ -31,14 +29,16 @@ const main =async() => {
    credentials: true
  }))
  const RedisStore = connectRedis(session)
- const redisClient = createClient({ legacyMode: true })
- redisClient.connect().catch(console.error)
+ const redis = new Redis()
+//this when using from reedis <------> import { createClient } from "redis"
+ //  const redisClient = createClient({ legacyMode: true })
+//  redisClient.connect().catch(console.error)
  
-  app.use(
+  app.use (
     session({
-      name:COOKIE_NAME,
-      store: new RedisStore({ client: redisClient as any, disableTouch: true }),
-      cookie:{
+      name: COOKIE_NAME,
+      store: new RedisStore({ client: redis as any, disableTouch: true }),
+      cookie: {
        maxAge:1000*60*60*24*365*10,
        httpOnly: true,
        sameSite: "lax",
@@ -56,7 +56,7 @@ const main =async() => {
         resolvers: [HelloResolver, PostsResolver, UserResolver],
         validate: false
       }),
-      context: ({req, res}):MyContext => ({em: orm.em, req, res}),
+      context: ({req, res}):MyContext => ({em: orm.em, req, res, redis}),
       plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],
   }); 
   await apolloServer.start();

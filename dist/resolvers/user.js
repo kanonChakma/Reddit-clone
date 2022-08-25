@@ -18,8 +18,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserResolver = void 0;
 const argon2_1 = __importDefault(require("argon2"));
 const type_graphql_1 = require("type-graphql");
+const uuid_1 = require("uuid");
 const constant_1 = require("../constant");
 const User_1 = require("../entities/User");
+const sendMail_1 = require("../utils/sendMail");
 const validateRegister_1 = require("../utils/validateRegister");
 const UsernamePasswordInput_1 = require("./UsernamePasswordInput");
 let FieldError = class FieldError {
@@ -56,8 +58,14 @@ let UserResolver = class UserResolver {
         const user = await em.findOne(User_1.User, { id: req.session.userId });
         return user;
     }
-    async forgotPassword(email, { em }) {
-        await em.findOne(User_1.User, { email });
+    async forgotPassword(email, { em, redis }) {
+        const user = await em.findOne(User_1.User, { email });
+        if (!user) {
+            return true;
+        }
+        const token = (0, uuid_1.v4)();
+        await redis.set(constant_1.FORGOT_PASSWORD_PREFIX + token, user.id, "EX", 1000 * 60 * 60 * 24 * 3);
+        (0, sendMail_1.sendEmail)(email, `<a href="http://localhost:3000/change-password/${token}">Reset Password<a/>`);
         return true;
     }
     async register(optios, { em, req }) {
@@ -105,7 +113,7 @@ let UserResolver = class UserResolver {
         if (!user) {
             return {
                 error: [{
-                        field: 'username',
+                        field: 'usernameOrEmail',
                         message: "user not found"
                     }]
             };
