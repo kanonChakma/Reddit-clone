@@ -10,7 +10,7 @@ const connect_redis_1 = __importDefault(require("connect-redis"));
 const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const express_session_1 = __importDefault(require("express-session"));
-const redis_1 = require("redis");
+const ioredis_1 = __importDefault(require("ioredis"));
 require("reflect-metadata");
 const type_graphql_1 = require("type-graphql");
 const constant_1 = require("./constant");
@@ -18,9 +18,7 @@ const mikro_orm_config_1 = __importDefault(require("./mikro-orm.config"));
 const hello_1 = require("./resolvers/hello");
 const posts_1 = require("./resolvers/posts");
 const user_1 = require("./resolvers/user");
-const sendMail_1 = require("./utils/sendMail");
 const main = async () => {
-    (0, sendMail_1.sendEmail)("kanon@gmail.com", "trainYourMind");
     const orm = await core_1.MikroORM.init(mikro_orm_config_1.default);
     await orm.getMigrator().up();
     const app = (0, express_1.default)();
@@ -29,11 +27,10 @@ const main = async () => {
         credentials: true
     }));
     const RedisStore = (0, connect_redis_1.default)(express_session_1.default);
-    const redisClient = (0, redis_1.createClient)({ legacyMode: true });
-    redisClient.connect().catch(console.error);
+    const redis = new ioredis_1.default();
     app.use((0, express_session_1.default)({
         name: constant_1.COOKIE_NAME,
-        store: new RedisStore({ client: redisClient, disableTouch: true }),
+        store: new RedisStore({ client: redis, disableTouch: true }),
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
             httpOnly: true,
@@ -49,7 +46,7 @@ const main = async () => {
             resolvers: [hello_1.HelloResolver, posts_1.PostsResolver, user_1.UserResolver],
             validate: false
         }),
-        context: ({ req, res }) => ({ em: orm.em, req, res }),
+        context: ({ req, res }) => ({ em: orm.em, req, res, redis }),
         plugins: [(0, apollo_server_core_1.ApolloServerPluginLandingPageGraphQLPlayground)({})],
     });
     await apolloServer.start();
