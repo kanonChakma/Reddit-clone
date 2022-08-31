@@ -1,4 +1,3 @@
-import { MikroORM } from "@mikro-orm/core"
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core"
 import { ApolloServer } from "apollo-server-express"
 import connectRedis from "connect-redis"
@@ -8,19 +7,30 @@ import session from "express-session"
 import Redis from "ioredis"
 import 'reflect-metadata'
 import { buildSchema } from "type-graphql"
+import { DataSource } from "typeorm"
 import { COOKIE_NAME, __prod__ } from "./constant"
-import mikroOrmConfig from "./mikro-orm.config"
+import { Post } from "./entities/Post"
+import { User } from "./entities/User"
 import { HelloResolver } from "./resolvers/hello"
 import { PostsResolver } from "./resolvers/posts"
 import { UserResolver } from "./resolvers/user"
 import { MyContext } from "./types/types"
 
-const main =async() => {
- //connect database
- const orm = await MikroORM.init(mikroOrmConfig)
 
- //run migration 
- await orm.getMigrator().up();
+export const appDataSource = new DataSource({
+  type: 'postgres',
+  database:'social',
+  username:'bubon',
+  password:'bubon1998',
+  logging: true,
+  synchronize: true,  //create table automatically
+  entities:[Post, User]
+});
+const main =async() => {
+
+ //connect database
+appDataSource.initialize();
+
  
  //server setup
  const app = express();
@@ -56,15 +66,16 @@ const main =async() => {
         resolvers: [HelloResolver, PostsResolver, UserResolver],
         validate: false
       }),
-      context: ({req, res}):MyContext => ({em: orm.em, req, res, redis}),
+      context: ({req, res}):MyContext => ({ req, res, redis}),
       plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],
   }); 
   await apolloServer.start();
   apolloServer.applyMiddleware({app, cors:false});
   
   app.listen(4000, ()=>{
-    console.log("app is listening")
+    console.log("app is listening");
   })
+
 //run sql
 //  const post = orm.em.create(Post,{title: "hello world"});
 //  await orm.em.persistAndFlush(post);
@@ -72,6 +83,7 @@ const main =async() => {
 // await orm.em.nativeInsert(Post, {title: "my first post 2"});
 //  const post = await orm.em.find(Post,{});
 //  console.log(post);
+
 }
 main().catch((err)=>{
     console.log(err)
