@@ -69,7 +69,8 @@ let UserResolver = class UserResolver {
                 ]
             };
         }
-        const userId = await redis.get(constant_1.FORGOT_PASSWORD_PREFIX + token);
+        const key = constant_1.FORGOT_PASSWORD_PREFIX + token;
+        const userId = await redis.get(key);
         if (!userId) {
             return {
                 error: [
@@ -94,6 +95,7 @@ let UserResolver = class UserResolver {
         user.password = await argon2_1.default.hash(newPassword);
         ;
         em.persistAndFlush(user);
+        await redis.del(key);
         req.session.userId = user.id;
         return { user };
     }

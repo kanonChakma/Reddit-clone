@@ -1,4 +1,5 @@
 import argon2 from "argon2";
+import { appDataSource } from "src";
 import { MyContext } from "src/types/types";
 import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from "type-graphql";
 import { v4 } from "uuid";
@@ -26,21 +27,21 @@ class UserResponse {
 @Resolver()
 export class UserResolver {
   @Query(() => User)
-  async me(
-    @Ctx() {em,req}:MyContext
+   me(
+    @Ctx() {req}:MyContext
   ) {
     if(!req.session.userId){
       return null;
     }
-    const user = await em.findOne(User, {id: req.session.userId})
-    return user;
+    return User.findOne({where: {id: req.session.userId}});
+
   } 
 
   @Mutation(() => UserResponse)
   async changePassword(
     @Arg('token') token: string,
     @Arg('newPassword') newPassword: string,
-    @Ctx() {em, redis, req }: MyContext
+    @Ctx() {redis, req }: MyContext
     ):Promise<UserResponse>{
 
       if(newPassword.length <=3 ) {
@@ -53,8 +54,9 @@ export class UserResolver {
           ]
         }
       }
-
-     const userId = await redis.get(FORGOT_PASSWORD_PREFIX+token);
+     
+     const key =FORGOT_PASSWORD_PREFIX+token;
+     const userId = await redis.get(key);
      if(!userId) {
       return {
         error: [
@@ -65,8 +67,9 @@ export class UserResolver {
         ]
       }
      }
+    const userIdNum = parseInt(userId);
 
-    const user = await em.findOne(User, {id:parseInt(userId)}) 
+    const user = await User.findOne({where: {id: userIdNum}}) 
     if(!user){
       return {
         error: [
@@ -77,9 +80,9 @@ export class UserResolver {
         ]
       }
     }
-    user.password =  await argon2.hash(newPassword);;
-    em.persistAndFlush(user);
 
+    User.update({id: userIdNum}, {password: await argon2.hash(newPassword)})
+    await redis.del(key);
     //login after change password
     req.session.userId = user.id;
     return {user};
@@ -88,10 +91,11 @@ export class UserResolver {
   @Mutation(() => Boolean)
   async forgotPassword (
     @Arg('email') email:string,
-    @Ctx() {em, redis}: MyContext
+    @Ctx() {redis}: MyContext
     ) {
     
-    const user = await em.findOne(User, {email})
+    const user = await User.findOne({where: {email}})
+ 
     if(!user) {
        return true;
     }
@@ -114,7 +118,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg('options') optios:UsernamePasswordInput,
-    @Ctx() {em, req}:MyContext
+    @Ctx() {req}:MyContext
   ): Promise<UserResponse> {
      
     const error = validateRegister(optios); 
@@ -123,26 +127,21 @@ export class UserResolver {
      }
 
     const hasPassword = await argon2.hash(optios.password);
-    const user = em.create(User,{
-        username:optios.username,
-        password: hasPassword,
-        email: optios.email
-    })
+    
+    let user;
     try {
-       await em.persistAndFlush(user);
-
-       //Another solution insert user data with createQueryBuilder
-        // const result =  await( em as EntityManager)
-        // .createQueryBuilder(User)
-        // .getKnexQuery()
-        // .insert({
-        //    username:options.username,
-        //    password: hasPassword,
-        //    created_at: new Date(),
-        //    updated_at: new Date()
-        // })
-        // .returning("*")
-        // user = result[0];
+      const result = await appDataSource
+      .createQueryBuilder()
+      .insert()
+      .into(User)
+      .values({
+        username:optios.username,
+        email: optios.email,
+        password: hasPassword,
+      })
+      .returning("*")
+      .execute()
+      user = result.raw;
     } catch (err) {
       console.log(err);
       if (err.code === '23505' && err.constraint === 'user_username_unique') {
@@ -176,11 +175,11 @@ export class UserResolver {
   async login(
     @Arg('usernameOrEmail') usernameOrEmail: string,
     @Arg('password') password: string,
-    @Ctx() {em, req}:MyContext
+    @Ctx() {req}:MyContext
 
   ): Promise<UserResponse> {
-    const user = await em.findOne(User,
-    usernameOrEmail.includes('@')?{email: usernameOrEmail}: {username: usernameOrEmail})
+    const user = await User.findOne(
+    usernameOrEmail.includes('@')?{where: {email: usernameOrEmail}}: {where: {username: usernameOrEmail }})
     if(!user) {
       return{
         error:[{
@@ -190,7 +189,7 @@ export class UserResolver {
       }
     }
     const valid = await argon2.verify(user.password, password);
-    if(!valid){
+    if(!valid) {
       return {
         error: [{
           field: 'password',
