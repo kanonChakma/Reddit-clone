@@ -1,10 +1,10 @@
 import argon2 from "argon2";
-import { appDataSource } from "src";
 import { MyContext } from "src/types/types";
 import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from "type-graphql";
 import { v4 } from "uuid";
 import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from "../constant";
 import { User } from "../entities/User";
+import { appDataSource } from "../index";
 import { sendEmail } from "../utils/sendMail";
 import { validateRegister } from "../utils/validateRegister";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
@@ -130,6 +130,12 @@ export class UserResolver {
     
     let user;
     try {
+        // User.create({
+        //   username:optios.username,
+        //   email: optios.email,
+        //   password: hasPassword,
+        // }).save();
+
       const result = await appDataSource
       .createQueryBuilder()
       .insert()
@@ -141,9 +147,9 @@ export class UserResolver {
       })
       .returning("*")
       .execute()
-      user = result.raw;
+      console.log(result);
+      user = result.raw[0];
     } catch (err) {
-      console.log(err);
       if (err.code === '23505' && err.constraint === 'user_username_unique') {
         return {
           error: [
@@ -209,7 +215,7 @@ export class UserResolver {
   ){
     return new Promise((resolve) => req.session.destroy((err) => {
       res.clearCookie(COOKIE_NAME)
-      if(err){
+      if(err) {
         resolve(false);
         return;
       }
