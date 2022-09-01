@@ -26,18 +26,20 @@ export const appDataSource = new DataSource({
   synchronize: true,  //create table automatically
   entities:[Post, User]
 });
+
+
 const main =async() => {
 
- //connect database
+ //------connect database----
 appDataSource.initialize();
 
- 
- //server setup
+ //----server setup-----
  const app = express();
  app.use(cors({
    origin:'http://localhost:3000',
    credentials: true
  }))
+
  const RedisStore = connectRedis(session)
  const redis = new Redis()
 //this when using from reedis <------> import { createClient } from "redis"
@@ -69,6 +71,7 @@ appDataSource.initialize();
       context: ({req, res}):MyContext => ({ req, res, redis}),
       plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],
   }); 
+
   await apolloServer.start();
   apolloServer.applyMiddleware({app, cors:false});
   
@@ -76,15 +79,8 @@ appDataSource.initialize();
     console.log("app is listening");
   })
 
-//run sql
-//  const post = orm.em.create(Post,{title: "hello world"});
-//  await orm.em.persistAndFlush(post);
+ }
 
-// await orm.em.nativeInsert(Post, {title: "my first post 2"});
-//  const post = await orm.em.find(Post,{});
-//  console.log(post);
-
-}
 main().catch((err)=>{
     console.log(err)
 })
