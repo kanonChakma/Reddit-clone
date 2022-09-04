@@ -17,7 +17,11 @@ import { UserResolver } from "./resolvers/user"
 import { MyContext } from "./types/types"
 
 
-export const appDataSource = new DataSource({
+
+const main =async() => {
+
+ //------connect database----
+const appDataSource = new DataSource({
   type: 'postgres',
   database:'social',
   username:'bubon',
@@ -25,13 +29,8 @@ export const appDataSource = new DataSource({
   logging: true,
   synchronize: true,  //create table automatically
   entities:[Post, User]
-});
-
-
-const main =async() => {
-
- //------connect database----
-appDataSource.initialize();
+ });
+ appDataSource.initialize();
 
  //----server setup-----
  const app = express();
@@ -82,5 +81,5 @@ appDataSource.initialize();
  }
 
 main().catch((err)=>{
-    console.log(err)
+    console.log("Error is ", err);
 })
