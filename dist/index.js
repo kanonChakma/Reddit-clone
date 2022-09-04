@@ -3,7 +3,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.appDataSource = void 0;
 const apollo_server_core_1 = require("apollo-server-core");
 const apollo_server_express_1 = require("apollo-server-express");
 const connect_redis_1 = __importDefault(require("connect-redis"));
@@ -20,17 +19,17 @@ const User_1 = require("./entities/User");
 const hello_1 = require("./resolvers/hello");
 const posts_1 = require("./resolvers/posts");
 const user_1 = require("./resolvers/user");
-exports.appDataSource = new typeorm_1.DataSource({
-    type: 'postgres',
-    database: 'social',
-    username: 'bubon',
-    password: 'bubon1998',
-    logging: true,
-    synchronize: true,
-    entities: [Post_1.Post, User_1.User]
-});
 const main = async () => {
-    exports.appDataSource.initialize();
+    const appDataSource = new typeorm_1.DataSource({
+        type: 'postgres',
+        database: 'social',
+        username: 'bubon',
+        password: 'bubon1998',
+        logging: true,
+        synchronize: true,
+        entities: [Post_1.Post, User_1.User]
+    });
+    appDataSource.initialize();
     const app = (0, express_1.default)();
     app.use((0, cors_1.default)({
         origin: 'http://localhost:3000',
@@ -66,6 +65,6 @@ const main = async () => {
     });
 };
 main().catch((err) => {
-    console.log(err);
+    console.log("Error is ", err);
 });
 //# sourceMappingURL=index.js.map

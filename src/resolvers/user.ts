@@ -4,7 +4,6 @@ import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from "type-gra
 import { v4 } from "uuid";
 import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from "../constant";
 import { User } from "../entities/User";
-import { appDataSource } from "../index";
 import { sendEmail } from "../utils/sendMail";
 import { validateRegister } from "../utils/validateRegister";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
@@ -130,25 +129,13 @@ export class UserResolver {
     
     let user;
     try {
-        // User.create({
-        //   username:optios.username,
-        //   email: optios.email,
-        //   password: hasPassword,
-        // }).save();
-
-      const result = await appDataSource
-      .createQueryBuilder()
-      .insert()
-      .into(User)
-      .values({
-        username:optios.username,
-        email: optios.email,
-        password: hasPassword,
-      })
-      .returning("*")
-      .execute()
+       const result = await User.create({
+          username:optios.username,
+          email: optios.email,
+          password: hasPassword,
+        }).save();
       console.log(result);
-      user = result.raw[0];
+      user = result;
     } catch (err) {
       if (err.code === '23505' && err.constraint === 'user_username_unique') {
         return {
@@ -173,7 +160,7 @@ export class UserResolver {
     // store user id session
     // this will set a cookie on the user
     // keep them logged in
-    req.session.userId = user.id;
+    req.session.userId = user?.id;
     return {user}; 
   }
 

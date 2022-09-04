@@ -21,7 +21,6 @@ const type_graphql_1 = require("type-graphql");
 const uuid_1 = require("uuid");
 const constant_1 = require("../constant");
 const User_1 = require("../entities/User");
-const index_1 = require("../index");
 const sendMail_1 = require("../utils/sendMail");
 const validateRegister_1 = require("../utils/validateRegister");
 const UsernamePasswordInput_1 = require("./UsernamePasswordInput");
@@ -116,19 +115,13 @@ let UserResolver = class UserResolver {
         const hasPassword = await argon2_1.default.hash(optios.password);
         let user;
         try {
-            const result = await index_1.appDataSource
-                .createQueryBuilder()
-                .insert()
-                .into(User_1.User)
-                .values({
+            const result = await User_1.User.create({
                 username: optios.username,
                 email: optios.email,
                 password: hasPassword,
-            })
-                .returning("*")
-                .execute();
+            }).save();
             console.log(result);
-            user = result.raw[0];
+            user = result;
         }
         catch (err) {
             if (err.code === '23505' && err.constraint === 'user_username_unique') {
@@ -152,7 +145,7 @@ let UserResolver = class UserResolver {
                 };
             }
         }
-        req.session.userId = user.id;
+        req.session.userId = user === null || user === void 0 ? void 0 : user.id;
         return { user };
     }
     async login(usernameOrEmail, password, { req }) {
