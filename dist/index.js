@@ -12,24 +12,13 @@ const express_session_1 = __importDefault(require("express-session"));
 const ioredis_1 = __importDefault(require("ioredis"));
 require("reflect-metadata");
 const type_graphql_1 = require("type-graphql");
-const typeorm_1 = require("typeorm");
 const constant_1 = require("./constant");
-const Post_1 = require("./entities/Post");
-const User_1 = require("./entities/User");
+const ormconfig_1 = __importDefault(require("./ormconfig"));
 const hello_1 = require("./resolvers/hello");
 const posts_1 = require("./resolvers/posts");
 const user_1 = require("./resolvers/user");
 const main = async () => {
-    const appDataSource = new typeorm_1.DataSource({
-        type: 'postgres',
-        database: 'social',
-        username: 'bubon',
-        password: 'bubon1998',
-        logging: true,
-        synchronize: true,
-        entities: [Post_1.Post, User_1.User]
-    });
-    appDataSource.initialize();
+    ormconfig_1.default.initialize();
     const app = (0, express_1.default)();
     app.use((0, cors_1.default)({
         origin: 'http://localhost:3000',
