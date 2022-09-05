@@ -2,23 +2,29 @@ import { MyContext } from "src/types/types";
 import { Arg, Ctx, Int, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
 import { Post } from "../entities/Post";
 import { isAuth } from "../middleware/isAuth";
-
-
-// @ObjectType()
-// class PostField {
-//   @Field()
-//   title: string
-
-//   @Field()
-//   text: string
-// }
+import dataSource from "../ormconfig";
 
 @Resolver()
 export class PostsResolver {
 
   @Query(() => [Post])
-  posts (): Promise<Post[]> {
-   return Post.find()
+  async posts (
+    @Arg('limit', () => Int) limit: number,
+    @Arg('cursor', () => String, {nullable: true} ) cursor: string | null
+  ): Promise<Post[]> {
+    const realTime = Math.min(50, limit);
+    const post = await dataSource
+    .getRepository(Post)
+    .createQueryBuilder("p")
+    .orderBy('"createdAt"', "DESC")
+    .take(realTime);
+
+    if(cursor) {
+      post.where('"createdAt" < :cursor', {
+        cursor: new Date(cursor)
+      });
+    }
+    return post.getMany();
   }
 
   @Query(() => Post, {nullable: true})

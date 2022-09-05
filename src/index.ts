@@ -7,10 +7,8 @@ import session from "express-session"
 import Redis from "ioredis"
 import 'reflect-metadata'
 import { buildSchema } from "type-graphql"
-import { DataSource } from "typeorm"
 import { COOKIE_NAME, __prod__ } from "./constant"
-import { Post } from "./entities/Post"
-import { User } from "./entities/User"
+import dataSource from "./ormconfig"
 import { HelloResolver } from "./resolvers/hello"
 import { PostsResolver } from "./resolvers/posts"
 import { UserResolver } from "./resolvers/user"
@@ -19,19 +17,8 @@ import { MyContext } from "./types/types"
 
 
 const main =async() => {
-
- //------connect database----
-const appDataSource = new DataSource({
-  type: 'postgres',
-  database:'social',
-  username:'bubon',
-  password:'bubon1998',
-  logging: true,
-  synchronize: true,  //create table automatically
-  entities:[Post, User]
- });
- appDataSource.initialize();
-
+ //------connect database-------
+  dataSource.initialize();
  //----server setup-----
  const app = express();
  app.use(cors({
